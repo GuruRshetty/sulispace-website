@@ -1,300 +1,422 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#10131f">
-  <title>Catch the Dot</title>
-  <style>
-    :root {
-      color-scheme: dark;
-      --ink: #f7f5ff;
-      --muted: #a5a8bd;
-      --line: #30364b;
-      --lime: #c9fa69;
-      --pink: #ff7bb2;
-    }
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Neon Drift — Arcade</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
-    * { box-sizing: border-box; }
+:root {
+  color-scheme: dark;
+  --ink: #f5f3ff;
+  --muted: #9290ad;
+  --cyan: #68f5e2;
+  --pink: #ff5eaa;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; min-height: 100svh; display: grid; place-items: center;
+  overflow-x: hidden; background: #090817; color: var(--ink);
+  font-family: "Space Grotesk", sans-serif;
+}
+.backdrop {
+  position: fixed; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse at 50% 45%, #211449, transparent 52%),
+              radial-gradient(ellipse at 10% 90%, #0b3c45, transparent 36%),
+              #090817;
+}
+.backdrop::after {
+  content: ""; position: absolute; inset: 0; opacity: .2;
+  background-image: linear-gradient(#ffffff0a 1px, transparent 1px),
+                    linear-gradient(90deg, #ffffff0a 1px, transparent 1px);
+  background-size: 52px 52px;
+}
+main { position: relative; width: min(100% - 28px, 860px); padding: 30px 0 24px; }
+.topline, .title-row, .help { display: flex; justify-content: space-between; align-items: center; }
+.topline { margin: 0 5px 17px; }
+.brand, .best small, .stat small, .sound, .help {
+  font-family: "DM Mono", monospace;
+}
+.brand { color: var(--cyan); font-size: 11px; letter-spacing: .25em; }
+.sound {
+  color: #c5c1da; background: #ffffff08; border: 1px solid #ffffff20;
+  border-radius: 99px; padding: 7px 12px; cursor: pointer;
+}
+.title-row { align-items: end; gap: 20px; margin: 0 5px 18px; }
+.title { margin: 0; font-size: clamp(38px, 8vw, 66px); letter-spacing: -.075em; line-height: .88; }
+.title span { color: var(--cyan); text-shadow: 0 0 35px #68f5e250; }
+.tagline { margin: 11px 0 0; color: var(--muted); font-size: 14px; }
+.best { text-align: right; }
+.best small, .stat small {
+  display: block; color: #8986a8; font-size: 10px; letter-spacing: .16em;
+}
+.best strong { display: block; margin-top: 5px; font: 16px "DM Mono", monospace; }
+.game-shell {
+  padding: 9px; border: 1px solid #ffffff20; border-radius: 19px;
+  background: linear-gradient(135deg, #ffffff15, #ffffff05);
+  box-shadow: 0 25px 90px #0008, 0 0 80px #8060ff0c;
+}
+.stage {
+  position: relative; overflow: hidden; border-radius: 12px; background: #0b0a1b;
+  aspect-ratio: 16 / 9; min-height: 260px; max-height: 490px;
+}
+canvas { display: block; width: 100%; height: 100%; }
+.hud { position: absolute; inset: 17px 19px auto; display: flex; justify-content: space-between; pointer-events: none; }
+.stat strong { display: block; margin-top: 3px; font: 500 clamp(19px, 4vw, 27px) "DM Mono", monospace; }
+.stat.right { text-align: right; }
+.overlay {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  background: linear-gradient(#09081735, #090817aa); transition: opacity .2s;
+}
+.overlay.hidden { opacity: 0; pointer-events: none; }
+.card { max-width: 430px; padding: 24px; text-align: center; }
+.eyebrow { color: var(--cyan); font: 11px "DM Mono", monospace; letter-spacing: .24em; text-transform: uppercase; }
+.card h2 { margin: 0 0 9px; font-size: clamp(25px, 5vw, 38px); letter-spacing: -.06em; }
+.card p { max-width: 330px; margin: 0 auto 20px; color: #b2aec9; font-size: 14px; line-height: 1.6; }
+.play {
+  padding: 12px 23px; border: 0; border-radius: 9px; background: var(--cyan);
+  color: #071a1a; font: 700 13px "Space Grotesk", sans-serif; cursor: pointer;
+}
+.play:hover { transform: translateY(-2px); }
+.help { gap: 14px; padding: 15px 6px 0; color: #8d89a7; font-size: 11px; }
+.keys { display: flex; align-items: center; gap: 5px; }
+.key { padding: 4px 7px; border: 1px solid #ffffff28; border-radius: 5px; color: #d4d1e8; background: #ffffff08; }
+.touch-hint { display: none; }
 
-    body {
-      margin: 0;
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      padding: 24px;
-      color: var(--ink);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-      background: radial-gradient(ellipse at 50% 0%, #292643 0, #151827 48%, #10131f 100%);
-    }
-
-    .game { width: min(760px, 100%); }
-
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 20px;
-      margin: 0 0 20px;
-    }
-
-    .eyebrow {
-      margin: 0 0 7px;
-      color: var(--lime);
-      font-size: .72rem;
-      font-weight: 800;
-      letter-spacing: .18em;
-      text-transform: uppercase;
-    }
-
-    h1 {
-      margin: 0;
-      font-size: clamp(2rem, 6vw, 3.3rem);
-      line-height: 1;
-      letter-spacing: -.06em;
-    }
-
-    .stats { display: flex; gap: 10px; }
-
-    .stat {
-      min-width: 94px;
-      padding: 11px 15px;
-      border: 1px solid var(--line);
-      border-radius: 15px;
-      background: #191d2d;
-      text-align: center;
-    }
-
-    .stat span {
-      display: block;
-      color: var(--muted);
-      font-size: .68rem;
-      font-weight: 700;
-      letter-spacing: .12em;
-      text-transform: uppercase;
-    }
-
-    .stat strong {
-      display: block;
-      margin-top: 3px;
-      font-size: 1.55rem;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .arena {
-      position: relative;
-      height: min(58vh, 440px);
-      min-height: 300px;
-      overflow: hidden;
-      border: 1px solid #353b52;
-      border-radius: 26px;
-      background-color: #171b29;
-      background-image: radial-gradient(#41465b 1px, transparent 1px);
-      background-size: 22px 22px;
-      box-shadow: 0 24px 70px #05060b66, inset 0 1px #ffffff08;
-    }
-
-    .target {
-      position: absolute;
-      z-index: 1;
-      width: 58px;
-      height: 58px;
-      padding: 0;
-      border: 0;
-      border-radius: 50%;
-      cursor: pointer;
-      background: var(--lime);
-      box-shadow: 0 0 0 8px #c9fa6925, 0 0 32px #c9fa6990;
-      transform: translate(-50%, -50%);
-      transition: width .12s, height .12s, filter .12s;
-    }
-
-    .target:hover { width: 64px; height: 64px; filter: brightness(1.1); }
-    .target:active { width: 51px; height: 51px; }
-    .target::after {
-      content: "";
-      position: absolute;
-      inset: 20px;
-      border-radius: 50%;
-      background: #17201a;
-    }
-
-    .target[hidden], .overlay[hidden] { display: none; }
-
-    .overlay {
-      position: absolute;
-      z-index: 2;
-      inset: 0;
-      display: grid;
-      place-content: center;
-      justify-items: center;
-      padding: 24px;
-      text-align: center;
-      background: #141725ae;
-      backdrop-filter: blur(5px);
-    }
-
-    .overlay h2 {
-      margin: 0 0 9px;
-      font-size: clamp(1.5rem, 5vw, 2.1rem);
-      letter-spacing: -.04em;
-    }
-
-    .overlay p {
-      max-width: 360px;
-      margin: 0 0 20px;
-      color: #c2c5d5;
-      line-height: 1.6;
-    }
-
-    .action {
-      padding: 13px 22px;
-      border: 0;
-      border-radius: 999px;
-      color: #151a10;
-      background: var(--lime);
-      font: inherit;
-      font-weight: 850;
-      cursor: pointer;
-      box-shadow: 0 6px 22px #c9fa6933;
-      transition: transform .15s, filter .15s;
-    }
-
-    .action:hover { transform: translateY(-2px); filter: brightness(1.06); }
-
-    footer {
-      display: flex;
-      justify-content: space-between;
-      gap: 16px;
-      margin-top: 14px;
-      color: var(--muted);
-      font-size: .85rem;
-    }
-
-    kbd {
-      padding: 2px 7px;
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      color: #e2e3ed;
-      background: #1b1f2e;
-      font: inherit;
-    }
-
-    @media (max-width: 520px) {
-      body { padding: 18px; }
-      header { align-items: flex-start; flex-direction: column; }
-      .stats { width: 100%; }
-      .stat { flex: 1; }
-      .arena { height: 52vh; min-height: 280px; }
-      footer { flex-direction: column; gap: 5px; }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after { transition: none !important; }
-    }
-  </style>
+@media (max-width: 580px) {
+  main { padding: 18px 0; }
+  .stage { aspect-ratio: 4 / 5; min-height: 420px; max-height: 65svh; }
+  .help { flex-wrap: wrap; font-size: 10px; }
+  .keys { display: none; }
+  .touch-hint { display: block; }
+}
+</style>
 </head>
 <body>
-  <main class="game">
-    <header>
-      <div>
-        <p class="eyebrow">A tiny reflex game</p>
-        <h1>Catch the Dot<span style="color:var(--pink)">.</span></h1>
+<div class="backdrop"></div>
+<main>
+  <div class="topline">
+    <div class="brand">✳ &nbsp; AFTER HOURS ARCADE</div>
+    <button class="sound" id="soundBtn">♫ &nbsp; SOUND ON</button>
+  </div>
+  <div class="title-row">
+    <div>
+      <h1 class="title">NEON <span>DRIFT</span></h1>
+      <p class="tagline">One more run. One more close call.</p>
+    </div>
+    <div class="best"><small>PERSONAL BEST</small><strong id="best">000000</strong></div>
+  </div>
+  <div class="game-shell">
+    <div class="stage" id="stage">
+      <canvas id="game"></canvas>
+      <div class="hud">
+        <div class="stat"><small>SCORE</small><strong id="score">000000</strong></div>
+        <div class="stat right"><small>SHIELDS</small><strong id="lives">◆ ◆ ◆</strong></div>
       </div>
-      <div class="stats" aria-label="Game statistics">
-        <div class="stat"><span>Score</span><strong id="score">0</strong></div>
-        <div class="stat">
-          <span>Time</span>
-          <strong><span id="time" style="display:inline;color:inherit;font-size:inherit;letter-spacing:normal;text-transform:none">30</span>s</strong>
+      <div class="overlay" id="overlay">
+        <div class="card">
+          <p class="eyebrow" id="eyebrow">A tiny test of nerve</p>
+          <h2 id="headline">Ready to drift?</h2>
+          <p id="description">Dodge the red. Chase the glow. The longer you last, the faster it gets.</p>
+          <button class="play" id="play">START GAME&nbsp; →</button>
         </div>
       </div>
-    </header>
+    </div>
+  </div>
+  <div class="help">
+    <div class="keys"><span class="key">←</span><span class="key">→</span><span>or</span><span class="key">A</span><span class="key">D</span><span>to steer</span><span class="key">SPACE</span><span>to phase</span></div>
+    <div class="touch-hint">TOUCH LEFT / RIGHT TO STEER · DOUBLE-TAP TO PHASE</div>
+    <div>COLLECT ✦ &nbsp; AVOID ◆</div>
+  </div>
+</main>
+<script>
+(() => {
+  const canvas = document.querySelector("#game");
+  const ctx = canvas.getContext("2d");
+  const stage = document.querySelector("#stage");
+  const overlay = document.querySelector("#overlay");
+  const play = document.querySelector("#play");
+  const scoreEl = document.querySelector("#score");
+  const livesEl = document.querySelector("#lives");
+  const bestEl = document.querySelector("#best");
+  const headline = document.querySelector("#headline");
+  const description = document.querySelector("#description");
+  const eyebrow = document.querySelector("#eyebrow");
+  const soundBtn = document.querySelector("#soundBtn");
 
-    <section class="arena" id="arena" aria-label="Game area">
-      <button class="target" id="target" type="button" aria-label="Catch the dot" hidden></button>
-      <div class="overlay" id="overlay">
-        <h2 id="message">Ready, steady, click!</h2>
-        <p id="description">Click the glowing dot as many times as you can in 30 seconds. It moves after every hit.</p>
-        <button class="action" id="start" type="button">Start game</button>
-      </div>
-    </section>
+  let w, h, dpr, player, objects = [], particles = [], keys = {};
+  let running = false, score = 0, lives = 3, elapsed = 0;
+  let last = 0, spawn = 0, orbSpawn = 0, phase = 0, invuln = 0;
+  let sound = true, audio = null;
+  let best = +(localStorage.getItem("neonDriftBest") || 0);
+  bestEl.textContent = format(best);
 
-    <footer>
-      <span>Click the dot. Build your score.</span>
-      <span>Tip: keep your cursor near the center <kbd>↗</kbd></span>
-    </footer>
-  </main>
+  function format(n) { return Math.floor(n).toString().padStart(6, "0"); }
 
-  <script>
-    const arena = document.querySelector("#arena");
-    const target = document.querySelector("#target");
-    const overlay = document.querySelector("#overlay");
-    const scoreLabel = document.querySelector("#score");
-    const timeLabel = document.querySelector("#time");
-    const startButton = document.querySelector("#start");
-    const message = document.querySelector("#message");
-    const description = document.querySelector("#description");
+  function resize() {
+    const rect = stage.getBoundingClientRect();
+    dpr = Math.min(devicePixelRatio || 1, 2);
+    w = rect.width;
+    h = rect.height;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (!player) player = { x: w / 2, y: h * .79, r: 10 };
+    player.y = h * .79;
+  }
+  new ResizeObserver(resize).observe(stage);
+  resize();
 
-    let score = 0;
-    let time = 30;
-    let timer = null;
-    let playing = false;
+  function tone(freq = 420, duration = .08, type = "sine", volume = .045) {
+    if (!sound) return;
+    try {
+      audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+      const osc = audio.createOscillator();
+      const gain = audio.createGain();
+      osc.type = type;
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(volume, audio.currentTime);
+      gain.gain.exponentialRampToValueAtTime(.001, audio.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(audio.destination);
+      osc.start();
+      osc.stop(audio.currentTime + duration);
+    } catch {}
+  }
 
-    function moveTarget() {
-      const padding = 38;
-      const x = padding + Math.random() * Math.max(0, arena.clientWidth - padding * 2);
-      const y = padding + Math.random() * Math.max(0, arena.clientHeight - padding * 2);
+  soundBtn.onclick = () => {
+    sound = !sound;
+    soundBtn.innerHTML = sound ? "♫ &nbsp; SOUND ON" : "♫ &nbsp; SOUND OFF";
+    if (sound) tone();
+  };
 
-      target.style.left = `${x}px`;
-      target.style.top = `${y}px`;
+  function start() {
+    score = 0; lives = 3; elapsed = 0; spawn = 0; orbSpawn = 0;
+    phase = 0; invuln = 0; objects = []; particles = [];
+    player.x = w / 2; running = true;
+    overlay.classList.add("hidden");
+    tone(540, .1, "triangle");
+  }
+  play.onclick = start;
+
+  window.addEventListener("keydown", e => {
+    if (["ArrowLeft", "ArrowRight", " ", "ArrowUp", "ArrowDown"].includes(e.key)) e.preventDefault();
+    keys[e.key.toLowerCase()] = true;
+    if (e.code === "Space" && running && phase <= 0) phase = 1.1;
+    if ((e.key === "Enter" || e.key === " ") && !running && !overlay.classList.contains("hidden")) start();
+  });
+  window.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
+
+  let touchX = null, lastTap = 0;
+  stage.addEventListener("pointerdown", e => {
+    if (!running) return;
+    touchX = e.clientX;
+    const now = Date.now();
+    if (now - lastTap < 330 && phase <= 0) phase = 1.1;
+    lastTap = now;
+  });
+  stage.addEventListener("pointermove", e => {
+    if (touchX === null || !running) return;
+    player.x += (e.clientX - touchX) * 1.15;
+    touchX = e.clientX;
+  });
+  stage.addEventListener("pointerup", () => touchX = null);
+  stage.addEventListener("pointercancel", () => touchX = null);
+
+  function burst(x, y, color, count = 12) {
+    for (let i = 0; i < count; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 30 + Math.random() * 150;
+      particles.push({
+        x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+        life: .35 + Math.random() * .5, max: .85, color, r: 1 + Math.random() * 2
+      });
     }
+  }
 
-    function endGame() {
-      playing = false;
-      clearInterval(timer);
-      target.hidden = true;
-      message.textContent = score >= 20
-        ? "Unreal reflexes!"
-        : score >= 10
-          ? "Nice catching!"
-          : "Time’s up!";
-      description.textContent =
-        `You caught the dot ${score} ${score === 1 ? "time" : "times"}. Want another round?`;
-      startButton.textContent = "Play again";
-      overlay.hidden = false;
-    }
-
-    function startGame() {
-      score = 0;
-      time = 30;
-      playing = true;
-      scoreLabel.textContent = score;
-      timeLabel.textContent = time;
-      overlay.hidden = true;
-      target.hidden = false;
-      moveTarget();
-
-      clearInterval(timer);
-      timer = setInterval(() => {
-        time -= 1;
-        timeLabel.textContent = time;
-
-        if (time <= 0) endGame();
-      }, 1000);
-    }
-
-    target.addEventListener("click", () => {
-      if (!playing) return;
-      score += 1;
-      scoreLabel.textContent = score;
-      moveTarget();
+  function addObject(type) {
+    const r = type === "orb" ? 7 : 9 + Math.random() * 7;
+    objects.push({
+      type, x: 20 + Math.random() * (w - 40), y: -r - 10, r,
+      vy: (type === "orb" ? 105 : 135) + Math.random() * 75 + elapsed * 2.2,
+      rot: Math.random() * 6
     });
+  }
 
-    startButton.addEventListener("click", startGame);
+  function drawBackground() {
+    ctx.fillStyle = "#0b0a1b";
+    ctx.fillRect(0, 0, w, h);
+    const t = performance.now() / 1000;
+    const horizon = h * .49;
+    const offset = (t * 30) % 34;
 
-    window.addEventListener("resize", () => {
-      if (playing) moveTarget();
-    });
-  </script>
+    ctx.save();
+    ctx.strokeStyle = "#8d79ff0c";
+    ctx.lineWidth = 1;
+    for (let x = -w; x < w * 2; x += 58) {
+      ctx.beginPath();
+      ctx.moveTo(w / 2 + (x - w / 2) * .08, horizon);
+      ctx.lineTo(x, h);
+      ctx.stroke();
+    }
+    for (let y = horizon + offset; y < h; y += 34) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+    }
+    ctx.restore();
+
+    for (let i = 0; i < 35; i++) {
+      const x = (i * 137.5) % w;
+      const y = (i * 83 + t * (12 + i % 3) * 10) % (h * .65);
+      ctx.globalAlpha = .18 + Math.sin(t * 2 + i) * .13;
+      ctx.fillStyle = i % 4 ? "#9c91d6" : "#68f5e2";
+      ctx.fillRect(x, y, 1.4, 1.4);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawShip() {
+    if (invuln > 0 && Math.floor(performance.now() / 90) % 2 === 0) return;
+    ctx.save();
+    ctx.translate(player.x, player.y);
+
+    if (phase > 0) {
+      ctx.beginPath();
+      ctx.arc(0, 0, 22 + Math.sin(performance.now() / 60) * 2, 0, Math.PI * 2);
+      ctx.strokeStyle = "#68f5e2a0";
+      ctx.lineWidth = 2;
+      ctx.shadowBlur = 17;
+      ctx.shadowColor = "#68f5e2";
+      ctx.stroke();
+    }
+
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = "#68f5e2";
+    ctx.fillStyle = "#68f5e2";
+    ctx.beginPath();
+    ctx.moveTo(0, -14); ctx.lineTo(10, 10); ctx.lineTo(0, 6); ctx.lineTo(-10, 10);
+    ctx.closePath(); ctx.fill();
+
+    ctx.fillStyle = "#f6f0ff";
+    ctx.beginPath(); ctx.arc(0, -3, 2.4, 0, Math.PI * 2); ctx.fill();
+
+    ctx.fillStyle = "#ff5eaa";
+    ctx.globalAlpha = .75 + Math.random() * .25;
+    ctx.beginPath(); ctx.moveTo(-4, 10); ctx.lineTo(0, 18 + Math.random() * 6); ctx.lineTo(4, 10);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawObject(o) {
+    ctx.save();
+    ctx.translate(o.x, o.y);
+    o.rot += .02;
+    ctx.rotate(o.rot);
+
+    if (o.type === "orb") {
+      ctx.shadowBlur = 19; ctx.shadowColor = "#68f5e2";
+      ctx.strokeStyle = "#68f5e2"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(0, -o.r); ctx.lineTo(o.r * .7, 0);
+      ctx.lineTo(0, o.r); ctx.lineTo(-o.r * .7, 0); ctx.closePath(); ctx.stroke();
+      ctx.fillStyle = "#d1fff8"; ctx.fillRect(-1.3, -1.3, 2.6, 2.6);
+    } else {
+      ctx.shadowBlur = 12; ctx.shadowColor = "#ff5eaa";
+      ctx.fillStyle = "#ff5eaa";
+      ctx.beginPath(); ctx.moveTo(0, -o.r); ctx.lineTo(o.r, 0);
+      ctx.lineTo(0, o.r); ctx.lineTo(-o.r, 0); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = "#52152f"; ctx.fillRect(-2, -2, 4, 4);
+    }
+    ctx.restore();
+  }
+
+  function endGame() {
+    running = false;
+    const finalScore = Math.floor(score);
+    const newBest = finalScore > best;
+    if (newBest) {
+      best = finalScore;
+      localStorage.setItem("neonDriftBest", best);
+      bestEl.textContent = format(best);
+    }
+    headline.textContent = "Run complete";
+    eyebrow.textContent = `YOU MADE IT ${Math.floor(elapsed)} SECONDS`;
+    description.textContent = `Score ${format(finalScore)}. ${newBest ? "A new personal best — beautiful flying." : "The grid remembers. Fancy another run?"}`;
+    play.innerHTML = "TRY AGAIN&nbsp; →";
+    overlay.classList.remove("hidden");
+    tone(150, .35, "sawtooth", .04);
+  }
+
+  function frame(now) {
+    const dt = Math.min((now - last) / 1000 || 0, .04);
+    last = now;
+    drawBackground();
+
+    if (running) {
+      elapsed += dt;
+      score += dt * (10 + Math.min(elapsed, 100) * .55);
+
+      if (keys.arrowleft || keys.a) player.x -= w * .72 * dt;
+      if (keys.arrowright || keys.d) player.x += w * .72 * dt;
+      player.x = Math.max(17, Math.min(w - 17, player.x));
+
+      if (phase > 0) phase -= dt;
+      if (invuln > 0) invuln -= dt;
+      spawn -= dt;
+      orbSpawn -= dt;
+      if (spawn <= 0) {
+        addObject("hazard");
+        spawn = Math.max(.25, .83 - elapsed * .004) + Math.random() * .42;
+      }
+      if (orbSpawn <= 0) {
+        addObject("orb");
+        orbSpawn = 2.1 + Math.random() * 1.9;
+      }
+
+      for (let i = objects.length - 1; i >= 0; i--) {
+        const o = objects[i];
+        o.y += o.vy * dt;
+        if (o.y > h + 30) { objects.splice(i, 1); continue; }
+
+        if (Math.hypot(o.x - player.x, o.y - player.y) < o.r + 10) {
+          objects.splice(i, 1);
+          if (o.type === "orb") {
+            score += 125;
+            burst(o.x, o.y, "#68f5e2", 13);
+            tone(820, .1, "sine");
+          } else if (phase <= 0 && invuln <= 0) {
+            lives--;
+            invuln = 1.25;
+            burst(player.x, player.y, "#ff5eaa", 18);
+            tone(210, .18, "triangle");
+            if (lives <= 0) { endGame(); break; }
+          }
+        }
+      }
+
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx * dt; p.y += p.vy * dt;
+        p.vx *= .97; p.vy *= .97; p.life -= dt;
+        if (p.life <= 0) particles.splice(i, 1);
+      }
+
+      scoreEl.textContent = format(score);
+      livesEl.textContent = "◆ ".repeat(Math.max(0, lives)).trim() || "—";
+
+      for (const p of particles) {
+        ctx.globalAlpha = Math.max(0, p.life / p.max);
+        ctx.fillStyle = p.color;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      objects.forEach(drawObject);
+      drawShip();
+    }
+    requestAnimationFrame(frame);
+  }
+
+  requestAnimationFrame(frame);
+})();
+</script>
 </body>
 </html>
